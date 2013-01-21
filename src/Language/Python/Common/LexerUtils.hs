@@ -19,6 +19,7 @@ import Data.List (foldl')
 import Data.Map as Map hiding (null, map, foldl')
 import Data.Word (Word8)
 import Data.Char (ord)
+import qualified Data.Bits
 import Numeric (readHex, readOct)
 import Language.Python.Common.Token as Token 
 import Language.Python.Common.ParserMonad hiding (location)
@@ -106,13 +107,13 @@ newlineToken = do
 
 -- Test if we are at the end of the line or file
 atEOLorEOF :: a -> AlexInput -> Int -> AlexInput -> Bool
-atEOLorEOF _user _inputBeforeToken _tokenLength (_loc, inputAfterToken) 
+atEOLorEOF _user _inputBeforeToken _tokenLength (_loc, _char, _bytes, inputAfterToken) 
    = null inputAfterToken || nextChar == '\n' || nextChar == '\r'
    where
    nextChar = head inputAfterToken 
 
 notEOF :: a -> AlexInput -> Int -> AlexInput -> Bool
-notEOF _user _inputBeforeToken _tokenLength (_loc, inputAfterToken) 
+notEOF _user _inputBeforeToken _tokenLength (_loc, _char, _bytes, inputAfterToken) 
    = not (null inputAfterToken)
 
 readBinary :: String -> Integer
@@ -179,25 +180,36 @@ matchParen _ _ = False
 -- -----------------------------------------------------------------------------
 -- Functionality required by Alex 
 
-type AlexInput = (SrcLocation, String)
+type AlexInput = (SrcLocation, Char, [Word8], String)
+
+utf8Encode :: Char -> [Word8]
+utf8Encode = map fromIntegral . go . ord
+  where
+    go oc
+      | oc <= 0x7f       = [oc]
+
+      | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6)
+                           , 0x80 + oc Data.Bits..&. 0x3f
+                           ]
+
+      | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12)
+                           , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
+                           , 0x80 + oc Data.Bits..&. 0x3f
+                           ]
+      | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)
+                           , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)
+                           , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
+                           , 0x80 + oc Data.Bits..&. 0x3f
+                           ]
 
 alexInputPrevChar :: AlexInput -> Char
 alexInputPrevChar _ = error "alexInputPrevChar not used"
 
-alexGetChar :: AlexInput -> Maybe (Char, AlexInput)
-alexGetChar (loc, input) 
-   | null input  = Nothing
-   | otherwise = Just (nextChar, (nextLoc, rest))
-   where
-   nextChar = head input
-   rest = tail input 
-   nextLoc = moveChar nextChar loc
-
-mapFst :: (a -> b) -> (a, c) -> (b, c)
-mapFst f (a, c) = (f a, c)
-
 alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
-alexGetByte = fmap (mapFst (fromIntegral . ord)) . alexGetChar
+alexGetByte (loc, char, (b:bs), input) = Just (b, (loc, char, bs, input))
+alexGetByte (_, _, [], [])             = Nothing
+alexGetByte (loc, _, [], char:input)   = case utf8Encode char of
+  (b:bs) -> Just (b, ((moveChar char loc), char, bs, input))
 
 moveChar :: Char -> SrcLocation -> SrcLocation 
 moveChar '\n' = incLine 1 

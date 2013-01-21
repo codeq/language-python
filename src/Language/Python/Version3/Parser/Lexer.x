@@ -211,7 +211,7 @@ lexToken = do
   location <- getLocation
   input <- getInput
   startCode <- getStartCode
-  case alexScan (location, input) startCode of
+  case alexScan (location, '\n', [], input) startCode of
     AlexEOF -> do
        depth <- getIndentStackDepth
        if depth <= 1 
@@ -220,11 +220,11 @@ lexToken = do
              popIndent
              return dedentToken
     AlexError _ -> lexicalError
-    AlexSkip (nextLocation, rest) len -> do
+    AlexSkip (nextLocation, _, _, rest) len -> do
        setLocation nextLocation 
        setInput rest 
        lexToken
-    AlexToken (nextLocation, rest) len action -> do
+    AlexToken (nextLocation, _, _, rest) len action -> do
        setLocation nextLocation 
        setInput rest 
        token <- action (mkSrcSpan location $ decColumn 1 nextLocation) len input 
