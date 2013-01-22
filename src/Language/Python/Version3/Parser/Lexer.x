@@ -39,9 +39,9 @@ $oct_digit = 0-7
 $hex_digit = [$digit a-fA-F]
 $bin_digit = 0-1 
 $short_str_char = [^ \n \r ' \" \\]
-$long_str_char = [. \n] # [' \"]
+$long_str_char = [. \n] # [' \" \\]
 $short_byte_str_char = \0-\127 # [\n \r ' \" \\]
-$long_byte_str_char = \0-\127 # [' \"]
+$long_byte_str_char = \0-\127 # [' \" \\]
 $not_single_quote = [. \n] # '
 $not_double_quote = [. \n] # \"
 
