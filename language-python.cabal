@@ -36,6 +36,9 @@ Library
       Language.Python.Common.PrettyToken
       Language.Python.Common.AST
       Language.Python.Common.PrettyAST
+      Language.Python.Univer
+      Language.Python.Univer.Parser
+      Language.Python.Univer.Lexer
       Language.Python.Version3
       Language.Python.Version3.Parser
       Language.Python.Version3.Lexer
@@ -47,6 +50,8 @@ Library
    other-modules:
       Language.Python.Common.ParserUtils
       Language.Python.Common.LexerUtils
+      Language.Python.Univer.Parser.Parser
+      Language.Python.Univer.Parser.Lexer
       Language.Python.Version3.Parser.Parser
       Language.Python.Version3.Parser.Lexer
       Language.Python.Version2.Parser.Parser
