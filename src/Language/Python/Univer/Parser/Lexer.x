@@ -294,6 +294,7 @@ keywordNames =
    , ("in", InToken)
    , ("is", IsToken)
    , ("lambda", LambdaToken)
+   , ("nonlocal", NonLocalToken)
    , ("not", NotToken)
    , ("or", OrToken)
    , ("pass", PassToken)

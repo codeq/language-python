@@ -111,6 +111,7 @@ import Data.Maybe (maybeToList)
    'lambda'        { LambdaToken {} }
    'NEWLINE'       { NewlineToken {} }
    'None'          { NoneToken {} }
+   'nonlocal'      { NonLocalToken {} }
    'not'           { NotToken {} }
    'or'            { OrToken {} }
    'pass'          { PassToken {} }
@@ -306,7 +307,7 @@ small_stmts
 
 {-
 small_stmt: (expr_stmt | print_stmt  | del_stmt | pass_stmt | flow_stmt |
-             import_stmt | global_stmt | exec_stmt | assert_stmt)
+             import_stmt | global_stmt | exec_stmt | nonlocal_stmt | assert_stmt)
 
 -}
 
@@ -320,6 +321,7 @@ small_stmt
    | import_stmt   { $1 }
    | global_stmt   { $1 }
    | exec_stmt     { $1 }
+   | nonlocal_stmt { $1 }
    | assert_stmt   { $1 }
 
 -- expr_stmt: testlist (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist))*)
@@ -492,6 +494,11 @@ exec_stmt :: { StatementSpan }
 exec_stmt
    : 'exec' expr opt(right('in', pair(test, opt(right(',', test)))))
      { AST.Exec $2 $3 (spanning (spanning $1 $2) $3) }
+
+-- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
+
+nonlocal_stmt :: { StatementSpan }
+nonlocal_stmt : 'nonlocal' one_or_more_names { AST.NonLocal $2 (spanning $1 $2) }
 
 -- assert_stmt: 'assert' test [',' test]
 
