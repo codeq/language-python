@@ -93,6 +93,7 @@ import Data.Maybe (maybeToList)
    'else'          { ElseToken {} }
    'except'        { ExceptToken {} }
    'exec'          { ExecToken {} }
+   'False'         { FalseToken {} }
    'finally'       { FinallyToken {} }
    'float'         { FloatToken {} }
    'for'           { ForToken {} }
@@ -109,6 +110,7 @@ import Data.Maybe (maybeToList)
    'is'            { IsToken {} }
    'lambda'        { LambdaToken {} }
    'NEWLINE'       { NewlineToken {} }
+   'None'          { NoneToken {} }
    'not'           { NotToken {} }
    'or'            { OrToken {} }
    'pass'          { PassToken {} }
@@ -116,6 +118,7 @@ import Data.Maybe (maybeToList)
    'raise'         { RaiseToken {} }
    'return'        { ReturnToken {} }
    'string'        { StringToken {} }
+   'True'          { TrueToken {} }
    'try'           { TryToken {} }
    'unicodestring' { UnicodeStringToken {} }
    'while'         { WhileToken {} }
@@ -769,6 +772,9 @@ atom
    | many1('string')                { AST.Strings (map token_literal $1) (getSpan $1) }
    | many1('bytestring')            { AST.ByteStrings (map token_literal $1) (getSpan $1) }
    | many1('unicodestring')         { AST.UnicodeStrings (map token_literal $1) (getSpan $1) }
+   | 'None'                         { AST.None (getSpan $1) }
+   | 'True'                         { AST.Bool Prelude.True (getSpan $1) }
+   | 'False'                        { AST.Bool Prelude.False (getSpan $1) }
 
 -- listmaker: test ( list_for | (',' test)* [','] )
 

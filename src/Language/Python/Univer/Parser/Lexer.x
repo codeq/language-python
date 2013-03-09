@@ -268,10 +268,12 @@ keywordOrIdent str location
 keywords :: Map.Map String (SrcSpan -> Token)
 keywords = Map.fromList keywordNames
 
--- see: <http://docs.python.org/reference/lexical_analysis.html#keywords>
 keywordNames :: [(String, SrcSpan -> Token)]
 keywordNames =
-   [ ("and", AndToken)
+   [ ("False", FalseToken)
+   , ("None", NoneToken)
+   , ("True", TrueToken)
+   , ("and", AndToken)
    , ("as", AsToken)
    , ("assert", AssertToken)
    , ("break", BreakToken)
