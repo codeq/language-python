@@ -15,7 +15,7 @@
 module Language.Python.Version2.Parser.Lexer 
    (initStartCodeStack, lexToken, endOfFileToken, lexCont) where
 
-import Language.Python.Common.Token as Token
+import Language.Python.Common.Token
 import Language.Python.Common.ParserMonad hiding (location)
 import Language.Python.Common.SrcLocation
 import Language.Python.Common.LexerUtils
