@@ -215,7 +215,7 @@ $white_no_nl+  ;  -- skip whitespace
     "`"   { symbolToken BackQuoteToken }
 }
 
-{ 
+{
 -- The lexer starts off in the beginning of file state (bof)
 initStartCodeStack :: [Int]
 initStartCodeStack = [bof,0]

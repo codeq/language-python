@@ -94,7 +94,7 @@ $white_no_nl+  ;  -- skip whitespace
    0 (b | B) $bin_digit+ { token IntegerToken readBinary }
 }
 
--- String literals 
+-- String literals
 
 <0> {
    ' @short_str_item_single* ' { mkString stringToken }
@@ -214,20 +214,20 @@ lexToken = do
   case alexScan (location, '\n', [], input) startCode of
     AlexEOF -> do
        depth <- getIndentStackDepth
-       if depth <= 1 
+       if depth <= 1
           then return endOfFileToken
-          else do 
+          else do
              popIndent
              return dedentToken
     AlexError _ -> lexicalError
     AlexSkip (nextLocation, _, _, rest) len -> do
-       setLocation nextLocation 
-       setInput rest 
+       setLocation nextLocation
+       setInput rest
        lexToken
     AlexToken (nextLocation, _, _, rest) len action -> do
-       setLocation nextLocation 
-       setInput rest 
-       token <- action (mkSrcSpan location $ decColumn 1 nextLocation) len input 
+       setLocation nextLocation
+       setInput rest
+       token <- action (mkSrcSpan location $ decColumn 1 nextLocation) len input
        setLastToken token
        return token
 
@@ -251,11 +251,11 @@ keywordOrIdent :: String -> SrcSpan -> P Token
 keywordOrIdent str location
    = return $ case Map.lookup str keywords of
          Just symbol -> symbol location
-         Nothing -> IdentifierToken location str  
+         Nothing -> IdentifierToken location str
 
 -- mapping from strings to keywords
-keywords :: Map.Map String (SrcSpan -> Token) 
-keywords = Map.fromList keywordNames 
+keywords :: Map.Map String (SrcSpan -> Token)
+keywords = Map.fromList keywordNames
 
 keywordNames :: [(String, SrcSpan -> Token)]
 keywordNames =
