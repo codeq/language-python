@@ -80,8 +80,6 @@ tokens :-
 \# ($not_eol_char)* { token (\ span lit val -> CommentToken span lit) id } 
 $white_no_nl+  ;  -- skip whitespace 
 
--- \\ @eol_pattern ; -- line join 
--- \\ @eol_pattern { endOfLine lexToken } -- line join 
 \\ @eol_pattern { lineJoin } -- line join 
 
 <0> {
@@ -141,7 +139,6 @@ $white_no_nl+  ;  -- skip whitespace
 
 -- beginning of file
 <bof> {
-   -- @eol_pattern                         ;
    @eol_pattern                         { endOfLine lexToken }
    ()                                   { indentation lexToken dedent BOF }
 }
