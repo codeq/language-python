@@ -65,6 +65,7 @@ import Data.Maybe (maybeToList)
    '!='            { NotEqualsToken {} }
    '<>'            { NotEqualsV2Token {} }
    '.'             { DotToken {} }
+   '...'           { EllipsisToken {} }
    '`'             { BackQuoteToken {} }
    '+='            { PlusAssignToken {} }
    '-='            { MinusAssignToken {} }
@@ -459,8 +460,9 @@ import_name :: { StatementSpan }
 import_name : 'import' dotted_as_names { AST.Import $2 (spanning $1 $2) }
 
 {-
-   import_from: ('from' ('.'* dotted_name | '.'+)
-              'import' ('*' | '(' import_as_names ')' | import_as_names))
+   # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
+   import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
+                 'import' ('*' | '(' import_as_names ')' | import_as_names))
 -}
 
 import_from :: { StatementSpan }
@@ -473,8 +475,10 @@ import_module: import_module_dots { makeRelative $1 }
 import_module_dots :: { [Either Token DottedNameSpan] }
 import_module_dots
    : '.'                      { [ Left $1 ] } 
+   | '...'                    { [ Left $1 ] } 
    | dotted_name              { [ Right $1 ] } 
    | '.' import_module_dots   { Left $1 : $2 } 
+   | '...' import_module_dots { Left $1 : $2 } 
 
 star_or_as_names :: { FromItemsSpan }
 star_or_as_names
@@ -807,6 +811,7 @@ atom
    | many1('string')                { AST.Strings (map token_literal $1) (getSpan $1) }
    | many1('bytestring')            { AST.ByteStrings (map token_literal $1) (getSpan $1) }
    | many1('unicodestring')         { AST.UnicodeStrings (map token_literal $1) (getSpan $1) }
+   | '...'                          { AST.Ellipsis (getSpan $1) }
    | 'None'                         { AST.None (getSpan $1) }
    | 'True'                         { AST.Bool Prelude.True (getSpan $1) }
    | 'False'                        { AST.Bool Prelude.False (getSpan $1) }
