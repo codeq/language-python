@@ -902,19 +902,11 @@ testlistrev
 dictmaker :: { [(ExprSpan, ExprSpan)] }
 dictmaker: sepOptEndBy(pair(test,right(':',test)), ',') { $1 }
 
--- classdef: 'class' NAME ['(' [testlist] ')'] ':' suite
+-- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 
 classdef :: { StatementSpan }
-classdef 
-   : 'class' NAME optional_paren_testlist ':' suite 
-     { AST.Class $2 $3 $5 (spanning $1 $5) }
-
-optional_paren_testlist :: { [ArgumentSpan] }
-optional_paren_testlist
-   : {- empty -} { [] }
-   | '(' ')' { [] }
-   | '(' testlistrev opt_comma ')' 
-     { map (\e -> ArgExpr e (getSpan e)) (reverse $2) }
+classdef: 'class' NAME opt_paren_arg_list ':' suite 
+           { AST.Class $2 $3 $5 (spanning $1 $5) }
 
 optional_arg_list :: { [ArgumentSpan] }
 optional_arg_list: opt(arglist) { concat (maybeToList $1) } 
