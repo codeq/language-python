@@ -353,21 +353,36 @@ small_stmt
    | nonlocal_stmt { $1 }
    | assert_stmt   { $1 }
 
--- expr_stmt: testlist (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist))*)
+-- expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist_star_expr))*)
 
 expr_stmt :: { StatementSpan }
 expr_stmt 
-   : testlist either(many_assign, augassign_yield_or_test_list) 
+   : testlist_star_expr either(many_assign, augassign_yield_or_test_list) 
    { makeAssignmentOrExpr $1 $2 }
 
 many_assign :: { [ExprSpan] }
-many_assign : many0(right('=', yield_or_test_list)) { $1 }
+many_assign : many0(right('=', yield_or_test_list_star)) { $1 }
 
 yield_or_test_list :: { ExprSpan }
 yield_or_test_list : or(yield_expr,testlist) { $1 }
 
+yield_or_test_list_star :: { ExprSpan }
+yield_or_test_list_star : or(yield_expr,testlist_star_expr) { $1 }
+
 augassign_yield_or_test_list :: { (AssignOpSpan, ExprSpan) }
 augassign_yield_or_test_list : augassign yield_or_test_list { ($1, $2) }
+
+-- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
+
+testlist_star_expr :: { ExprSpan }
+testlist_star_expr
+   : test_list_star_rev opt_comma 
+     { makeTupleOrExpr (reverse $1) $2 } 
+
+test_list_star_rev :: { [ExprSpan] }
+test_list_star_rev
+   : or(test,star_expr) { [$1] }
+   | test_list_star_rev ',' or(test,star_expr) { $3 : $1 }
 
 {- 
    augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
@@ -478,7 +493,7 @@ import_module_dots
    | '...'                    { [ Left $1 ] } 
    | dotted_name              { [ Right $1 ] } 
    | '.' import_module_dots   { Left $1 : $2 } 
-   | '...' import_module_dots { Left $1 : $2 } 
+   | '...' import_module_dots { Left $1 : $2 }
 
 star_or_as_names :: { FromItemsSpan }
 star_or_as_names
@@ -713,6 +728,11 @@ comp_op
    | 'is'       { AST.Is (getSpan $1) }
    | 'is' 'not' { AST.IsNot (spanning $1 $2) }
 
+-- star_expr: '*' expr
+
+star_expr :: { ExprSpan }
+star_expr : '*' expr { Starred $2 (spanning $1 $2) }
+
 -- expr: xor_expr ('|' xor_expr)* 
 
 expr :: { ExprSpan }
@@ -833,12 +853,12 @@ yield_or_testlist_comp
    | yield_expr { Paren $1 }
    | testlist_gexp { either Paren Generator $1 } 
 
--- testlist_gexp: test ( comp_for | (',' test)* [','] )
+-- testlist_gexp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 
 testlist_gexp :: { Either ExprSpan (ComprehensionSpan ExprSpan) }
 testlist_gexp
-   : testlist { Left $1 }
-   | test comp_for { Right (makeComprehension $1 $2) }
+   : testlist_star_expr { Left $1 }
+   | or(test,star_expr) comp_for { Right (makeComprehension $1 $2) }
 
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME 
 
@@ -867,10 +887,10 @@ subscript
 sliceop :: { Maybe ExprSpan }
 sliceop : ':' opt(test) { $2 }
 
--- exprlist: expr (',' expr)* [',']
+-- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 
 exprlist :: { [ExprSpan] }
-exprlist: sepOptEndBy(expr, ',') { $1 }
+exprlist: sepOptEndBy(or(expr,star_expr), ',') { $1 }
 
 opt_comma :: { Maybe Token }
 opt_comma 
@@ -973,7 +993,7 @@ comp_for
    : 'for' exprlist 'in' or_test opt(comp_iter)
      { AST.CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
 
--- comp_if: 'if' test_no_cond [comp_iter]
+-- comp_if: 'if' test_nocond [comp_iter]
 
 comp_if :: { CompIfSpan }
 comp_if: 'if' test_no_cond opt(comp_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
