@@ -835,8 +835,6 @@ atom
    | 'True'                         { AST.Bool Prelude.True (getSpan $1) }
    | 'False'                        { AST.Bool Prelude.False (getSpan $1) }
 
--- listmaker: test ( list_for | (',' test)* [','] )
-
 list_atom :: { ExprSpan }
 list_atom
    : '[' ']' { List [] (spanning $1 $2) }
