@@ -801,7 +801,7 @@ exponent_op: '**' { AST.Exponent (getSpan $1) }
 {- 
    atom: ('(' [yield_expr|testlist_comp] ')' |
           '[' [testlist_comp] ']' |
-          '{' [dictmaker] '}' |
+          '{' [dictorsetmaker] '}' |
           '`' testlist1 '`' |
            NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 -}
@@ -810,7 +810,7 @@ atom :: { ExprSpan }
 atom
    : '(' yield_or_testlist_comp ')' { $2 (spanning $1 $3) } 
    | list_atom                      { $1 }
-   | '{' opt(dictmaker) '}'         { AST.Dictionary (concat (maybeToList $2)) (spanning $1 $3) }
+   | dict_or_set_atom               { $1 }
    | '`' testlist1 '`'              { AST.StringConversion $2 (spanning $1 $3) }
    | NAME                           { AST.Var $1 (getSpan $1) }
    | 'integer'                      { AST.Int (token_integer $1) (token_literal $1) (getSpan $1) }
@@ -829,6 +829,11 @@ list_atom :: { ExprSpan }
 list_atom
    : '[' ']' { List [] (spanning $1 $2) }
    | '[' testlist_comp ']' { makeListForm (spanning $1 $3) $2 }
+
+dict_or_set_atom :: { ExprSpan }
+dict_or_set_atom
+   : '{' '}' { Dictionary [] (spanning $1 $2) }
+   | '{' dictorsetmaker '}' { $2 (spanning $1 $3) }
 
 yield_or_testlist_comp :: { SrcSpan -> ExprSpan }
 yield_or_testlist_comp
@@ -899,10 +904,35 @@ testlistrev
    : test { [$1] }
    | testlistrev ',' test { $3 : $1 }
 
--- dictmaker: test ':' test (',' test ':' test)* [',']
+{- 
+   dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
+                   (test (comp_for | (',' test)* [','])) )
+-}
 
-dictmaker :: { [(ExprSpan, ExprSpan)] }
-dictmaker: sepOptEndBy(pair(test,right(':',test)), ',') { $1 }
+dictorsetmaker :: { SrcSpan -> ExprSpan }
+dictorsetmaker
+   : test ':' test dict_rest { makeDictionary ($1, $3) $4 } 
+   | test set_rest { makeSet $1 $2 } 
+
+dict_rest :: { Either CompForSpan [(ExprSpan, ExprSpan)] }
+dict_rest 
+   : comp_for { Left $1 }
+   | zero_or_more_dict_mappings_rev opt_comma { Right (reverse $1) }
+
+zero_or_more_dict_mappings_rev :: { [(ExprSpan, ExprSpan)] }
+zero_or_more_dict_mappings_rev
+   : {- empty -} { [] }
+   | zero_or_more_dict_mappings_rev ',' test ':' test { ($3,$5) : $1 }
+
+set_rest :: { Either CompForSpan [ExprSpan] }
+set_rest
+   : comp_for { Left $1 }
+   | zero_or_more_comma_test_rev opt_comma { Right (reverse $1) }
+
+zero_or_more_comma_test_rev :: { [ExprSpan] }
+zero_or_more_comma_test_rev
+   : {- empty -} { [] }
+   | zero_or_more_comma_test_rev ',' test { $3 : $1 }
 
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 
