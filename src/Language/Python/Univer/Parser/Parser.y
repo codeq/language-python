@@ -810,7 +810,7 @@ exponent_op: '**' { AST.Exponent (getSpan $1) }
 
 {- 
    atom: ('(' [yield_expr|testlist_comp] ')' |
-       '[' [listmaker] ']' |
+       '[' [testlist_comp] ']' |
        '{' [dictmaker] '}' |
        '`' testlist1 '`' |
        NAME | NUMBER | STRING+)
