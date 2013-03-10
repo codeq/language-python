@@ -856,7 +856,7 @@ trailer
 subscriptlist :: { [Subscript] }
 subscriptlist : sepOptEndBy(subscript, ',') { $1 }
 
--- subscript: '.' '.' '.' | test | [test] ':' [test] [sliceop]
+-- subscript: test | [test] ':' [test] [sliceop]
 
 subscript :: { Subscript }
 subscript
