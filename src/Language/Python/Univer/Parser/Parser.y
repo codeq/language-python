@@ -809,7 +809,7 @@ exponent_op :: { OpSpan }
 exponent_op: '**' { AST.Exponent (getSpan $1) }
 
 {- 
-   atom: ('(' [yield_expr|testlist_gexp] ')' |
+   atom: ('(' [yield_expr|testlist_comp] ')' |
        '[' [listmaker] ']' |
        '{' [dictmaker] '}' |
        '`' testlist1 '`' |
@@ -851,12 +851,12 @@ yield_or_testlist_comp :: { SrcSpan -> ExprSpan }
 yield_or_testlist_comp
    : {- empty -} { Tuple [] }
    | yield_expr { Paren $1 }
-   | testlist_gexp { either Paren Generator $1 } 
+   | testlist_comp { either Paren Generator $1 } 
 
--- testlist_gexp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
+-- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 
-testlist_gexp :: { Either ExprSpan (ComprehensionSpan ExprSpan) }
-testlist_gexp
+testlist_comp :: { Either ExprSpan (ComprehensionSpan ExprSpan) }
+testlist_comp
    : testlist_star_expr { Left $1 }
    | or(test,star_expr) comp_for { Right (makeComprehension $1 $2) }
 
