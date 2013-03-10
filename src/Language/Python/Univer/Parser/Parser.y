@@ -631,26 +631,15 @@ suite
    : simple_stmt { $1 }
    | {- no newline here! -} 'indent' many1(stmt) 'dedent' { concat $2 } 
 
--- testlist_safe: old_test [(',' old_test)+ [',']]
+-- testlist_safe: test_no_cond [(',' test_no_cond)+ [',']]
 
 testlist_safe :: { ExprSpan }
 testlist : old_testlistrev opt_comma { makeTupleOrExpr (reverse $1) $2 }
 
 old_testlistrev :: { [ExprSpan] }
 old_testlistrev 
-   : old_test { [$1] }
-   | old_testlistrev ',' old_test { $3 : $1 }
-
--- old_test: or_test | old_lambdef
-
-old_test :: { ExprSpan }
-old_test: or(or_test,old_lambdef) { $1 }
-
--- old_lambdef: 'lambda' [varargslist] ':' old_test 
-
-old_lambdef :: { ExprSpan }
-old_lambdef: 'lambda' opt_varargslist ':' old_test
-             { AST.Lambda $2 $4 (spanning $1 $4) }
+   : test_no_cond { [$1] }
+   | old_testlistrev ',' test_no_cond { $3 : $1 }
 
 -- test: or_test ['if' or_test 'else' test] | lambdef
 
@@ -662,10 +651,20 @@ test
 test_if_cond :: { (ExprSpan, ExprSpan) }
 test_if_cond: 'if' or_test 'else' test { ($2, $4) }
 
+-- test_nocond: or_test | lambdef_nocond
+
+test_no_cond :: { ExprSpan }
+test_no_cond: or(or_test, lambdef_nocond) { $1 }
+
 -- lambdef: 'lambda' [varargslist] ':' test
 
 lambdef :: { ExprSpan }
 lambdef : 'lambda' opt_varargslist ':' test { AST.Lambda $2 $4 (spanning $1 $4) }
+
+-- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
+
+lambdef_nocond :: { ExprSpan }
+lambdef_nocond : 'lambda' opt_varargslist ':' test_no_cond { AST.Lambda $2 $4 (spanning $1 $4) }
 
 opt_varargslist :: { [ParameterSpan] }
 opt_varargslist: opt(varargslist) { concat (maybeToList $1) }
@@ -799,7 +798,7 @@ exponent_op: '**' { AST.Exponent (getSpan $1) }
 
 atom :: { ExprSpan }
 atom
-   : '(' yield_or_testlist_gexp ')' { $2 (spanning $1 $3) } 
+   : '(' yield_or_testlist_comp ')' { $2 (spanning $1 $3) } 
    | list_atom                      { $1 }
    | '{' opt(dictmaker) '}'         { AST.Dictionary (concat (maybeToList $2)) (spanning $1 $3) }
    | '`' testlist1 '`'              { AST.StringConversion $2 (spanning $1 $3) }
@@ -828,18 +827,18 @@ testlistfor
    : testlist { Left $1 }
    | test list_for { Right (makeComprehension $1 $2) }
 
-yield_or_testlist_gexp :: { SrcSpan -> ExprSpan }
-yield_or_testlist_gexp
+yield_or_testlist_comp :: { SrcSpan -> ExprSpan }
+yield_or_testlist_comp
    : {- empty -} { Tuple [] }
    | yield_expr { Paren $1 }
    | testlist_gexp { either Paren Generator $1 } 
 
--- testlist_gexp: test ( gen_for | (',' test)* [','] )
+-- testlist_gexp: test ( comp_for | (',' test)* [','] )
 
 testlist_gexp :: { Either ExprSpan (ComprehensionSpan ExprSpan) }
 testlist_gexp
    : testlist { Left $1 }
-   | test gen_for { Right (makeComprehension $1 $2) }
+   | test comp_for { Right (makeComprehension $1 $2) }
 
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME 
 
@@ -943,13 +942,13 @@ oneArgument
    | '**' test { ArgVarArgsKeyword $2 (spanning $1 $2) }
    | argument { $1 }
 
--- argument: test [gen_for] | test '=' test
+-- argument: test [comp_for] | test '=' test
 
 argument :: { ArgumentSpan }
 argument
    : NAME '=' test { ArgKeyword $1 $3 (spanning $1 $3) }
    | test { ArgExpr $1 (getSpan $1) } 
-   | test gen_for 
+   | test comp_for 
      { let span = spanning $1 $1 in ArgExpr (Generator (makeComprehension $1 $2) span) span }
 
 -- list_iter: list_for | list_if
@@ -963,28 +962,29 @@ list_for :: { CompForSpan }
 list_for: 'for' exprlist 'in' testlist_safe opt(list_iter)
           { AST.CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
 
--- list_if: 'if' old_test [list_iter]
+-- list_if: 'if' test_no_cond [list_iter]
 
 list_if :: { CompIfSpan }
-list_if: 'if' old_test opt(list_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
+list_if: 'if' test_no_cond opt(list_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
 
--- gen_iter: gen_for | gen_if
+-- comp_iter: comp_for | comp_if
 
-gen_iter :: { CompIterSpan }
-gen_iter
-   : gen_for { AST.IterFor $1 (getSpan $1) }
-   | gen_if { AST.IterIf $1 (getSpan $1) }
+comp_iter :: { CompIterSpan }
+comp_iter
+   : comp_for { AST.IterFor $1 (getSpan $1) }
+   | comp_if  { AST.IterIf $1 (getSpan $1) }
 
--- gen_for: 'for' exprlist 'in' or_test [gen_iter]
+-- comp_for: 'for' exprlist 'in' or_test [comp_iter]
 
-gen_for :: { CompForSpan }
-gen_for: 'for' exprlist 'in' or_test opt(gen_iter)
-          { AST.CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
+comp_for :: { CompForSpan }
+comp_for
+   : 'for' exprlist 'in' or_test opt(comp_iter)
+     { AST.CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
 
--- gen_if: 'if' old_test [gen_iter]
+-- comp_if: 'if' test_no_cond [comp_iter]
 
-gen_if :: { CompIfSpan }
-gen_if: 'if' old_test opt(gen_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
+comp_if :: { CompIfSpan }
+comp_if: 'if' test_no_cond opt(comp_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
 
 -- testlist1: test (',' test)*
 
