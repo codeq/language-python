@@ -79,6 +79,7 @@ import Data.Maybe (maybeToList)
    '>>='           { RightShiftAssignToken {} }
    '//='           { FloorDivAssignToken {} } 
    '@'             { AtToken {} }
+   '->'            { RightArrowToken {} }
    'and'           { AndToken {} }
    'as'            { AsToken {} }
    'assert'        { AssertToken {} }
@@ -230,17 +231,41 @@ decorated
    : decorators or(classdef,funcdef) 
      { makeDecorated $1 $2 } 
 
--- funcdef: 'def' NAME parameters ':' suite
+-- funcdef: 'def' NAME parameters ['->' test] ':' suite
 
 funcdef :: { StatementSpan }
 funcdef 
-   : 'def' NAME parameters ':' suite
-     { makeFun $1 $2 $3 Nothing $5 }
+   : 'def' NAME parameters opt(right('->',test)) ':' suite
+     { makeFun $1 $2 $3 $4 $6 }
 
--- parameters: '(' [varargslist] ')'
+-- parameters: '(' [typedargslist] ')'
 
 parameters :: { [ParameterSpan] }
-parameters : '(' opt(varargslist) ')' { concat (maybeToList $2) }
+parameters : '(' opt(typedargslist) ')' { concat (maybeToList $2) }
+
+typedargslist :: { [ParameterSpan] }
+typedargslist: sepOptEndBy(one_typedargs_param,',') {% checkParameters $1 }
+
+one_typedargs_param :: { ParameterSpan }
+one_typedargs_param
+   : tfpdef optional_default { makeParam $1 $2 }
+   | '(' fplist ')' optional_default { makeTupleParam (ParamTuple $2 (spanning $1 $3)) $4 }
+   | '*' opt(tfpdef) { makeStarParam $1 $2 }
+   | '**' tfpdef { makeStarStarParam $1 $2 }
+
+optional_default :: { Maybe ExprSpan }
+optional_default: opt(equals_test) { $1 }
+
+equals_test :: { ExprSpan }
+equals_test: '=' test { $2 }
+
+{- tfpdef: NAME [':' test] -}
+
+tfpdef :: { (IdentSpan, Maybe ExprSpan) }
+tfpdef : NAME opt(colon_test) { ($1, $2) }
+
+colon_test :: { ExprSpan }
+colon_test: ':' test { $2 }
 
 {- 
    varargslist: ((vfpdef ['=' test] ',')* ('*' [vfpdef] (',' vfpdef ['=' test])*  [',' '**' vfpdef] | '**' vfpdef) | vfpdef ['=' test] (',' vfpdef ['=' test])* [','])  
@@ -266,15 +291,18 @@ varargslist : sepOptEndBy(one_varargs_param,',') {% checkParameters $1 }
 
 one_varargs_param :: { ParameterSpan }
 one_varargs_param
-   : '*' NAME { makeStarParam $1 (Just ($2, Nothing)) }
-   | '**' NAME { makeStarStarParam $1 ($2, Nothing) } 
+   : '*' optvfpdef { makeStarParam $1 $2 }
+   | '**' vfpdef { makeStarStarParam $1 ($2, Nothing) } 
    | fpdef optional_default { makeTupleParam $1 $2 }
 
-optional_default :: { Maybe ExprSpan }
-optional_default: opt(equals_test) { $1 }
+-- vfpdef: NAME
+vfpdef :: { IdentSpan }
+vfpdef : NAME { $1 }
 
-equals_test :: { ExprSpan }
-equals_test: '=' test { $2 }
+optvfpdef :: { Maybe (IdentSpan, Maybe ExprSpan) }
+optvfpdef
+   : {- empty -} { Nothing }
+   | vfpdef { Just ($1, Nothing) }
 
 -- fpdef: NAME | '(' fplist ')'
 
