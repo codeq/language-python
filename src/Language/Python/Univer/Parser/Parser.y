@@ -838,12 +838,7 @@ atom
 list_atom :: { ExprSpan }
 list_atom
    : '[' ']' { List [] (spanning $1 $2) }
-   | '[' testlistfor ']' { makeListForm (spanning $1 $3) $2 }
-
-testlistfor :: { Either ExprSpan (ComprehensionSpan ExprSpan) }
-testlistfor
-   : testlist { Left $1 }
-   | test list_for { Right (makeComprehension $1 $2) }
+   | '[' testlist_comp ']' { makeListForm (spanning $1 $3) $2 }
 
 yield_or_testlist_comp :: { SrcSpan -> ExprSpan }
 yield_or_testlist_comp
