@@ -798,7 +798,7 @@ exponent_op: '**' { AST.Exponent (getSpan $1) }
 -}
 
 atom :: { ExprSpan }
-atom 
+atom
    : '(' yield_or_testlist_gexp ')' { $2 (spanning $1 $3) } 
    | list_atom                      { $1 }
    | '{' opt(dictmaker) '}'         { AST.Dictionary (concat (maybeToList $2)) (spanning $1 $3) }
