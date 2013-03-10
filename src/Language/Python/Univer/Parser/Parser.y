@@ -646,16 +646,6 @@ suite
    : simple_stmt { $1 }
    | {- no newline here! -} 'indent' many1(stmt) 'dedent' { concat $2 } 
 
--- testlist_safe: test_no_cond [(',' test_no_cond)+ [',']]
-
-testlist_safe :: { ExprSpan }
-testlist : old_testlistrev opt_comma { makeTupleOrExpr (reverse $1) $2 }
-
-old_testlistrev :: { [ExprSpan] }
-old_testlistrev 
-   : test_no_cond { [$1] }
-   | old_testlistrev ',' test_no_cond { $3 : $1 }
-
 -- test: or_test ['if' or_test 'else' test] | lambdef
 
 test :: { ExprSpan }
@@ -954,22 +944,6 @@ argument
    | test { ArgExpr $1 (getSpan $1) } 
    | test comp_for 
      { let span = spanning $1 $1 in ArgExpr (Generator (makeComprehension $1 $2) span) span }
-
--- list_iter: list_for | list_if
-list_iter :: { CompIterSpan }
-list_iter
-   : list_for { AST.IterFor $1 (getSpan $1) }
-   | list_if { AST.IterIf $1 (getSpan $1) }
-
--- list_for: 'for' exprlist 'in' testlist_safe [list_iter]
-list_for :: { CompForSpan }
-list_for: 'for' exprlist 'in' testlist_safe opt(list_iter)
-          { AST.CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
-
--- list_if: 'if' test_no_cond [list_iter]
-
-list_if :: { CompIfSpan }
-list_if: 'if' test_no_cond opt(list_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
 
 -- comp_iter: comp_for | comp_if
 
