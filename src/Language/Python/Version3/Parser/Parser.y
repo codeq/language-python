@@ -770,19 +770,20 @@ exponent_op: '**' { AST.Exponent (getSpan $1) }
 -}
 
 atom :: { ExprSpan }
-atom : '(' yield_or_testlist_comp ')' { $2 (spanning $1 $3) } 
-     | list_atom                      { $1 }
-     | dict_or_set_atom               { $1 }
-     | NAME                           { AST.Var $1 (getSpan $1) }
-     | 'integer'                      { AST.Int (token_integer $1) (token_literal $1) (getSpan $1) }
-     | 'float'                        { AST.Float (token_double $1) (token_literal $1) (getSpan $1) }
-     | 'imaginary'                    { AST.Imaginary (token_double $1) (token_literal $1) (getSpan $1) }
-     | many1('string')                { AST.Strings (map token_literal $1) (getSpan $1) }
-     | many1('bytestring')            { AST.ByteStrings (map token_literal $1) (getSpan $1) }
-     | '...'                          { AST.Ellipsis (getSpan $1) }
-     | 'None'                         { AST.None (getSpan $1) }
-     | 'True'                         { AST.Bool Prelude.True (getSpan $1) }
-     | 'False'                        { AST.Bool Prelude.False (getSpan $1) }
+atom
+   : '(' yield_or_testlist_comp ')' { $2 (spanning $1 $3) } 
+   | list_atom                      { $1 }
+   | dict_or_set_atom               { $1 }
+   | NAME                           { AST.Var $1 (getSpan $1) }
+   | 'integer'                      { AST.Int (token_integer $1) (token_literal $1) (getSpan $1) }
+   | 'float'                        { AST.Float (token_double $1) (token_literal $1) (getSpan $1) }
+   | 'imaginary'                    { AST.Imaginary (token_double $1) (token_literal $1) (getSpan $1) }
+   | many1('string')                { AST.Strings (map token_literal $1) (getSpan $1) }
+   | many1('bytestring')            { AST.ByteStrings (map token_literal $1) (getSpan $1) }
+   | '...'                          { AST.Ellipsis (getSpan $1) }
+   | 'None'                         { AST.None (getSpan $1) }
+   | 'True'                         { AST.Bool Prelude.True (getSpan $1) }
+   | 'False'                        { AST.Bool Prelude.False (getSpan $1) }
 
 list_atom :: { ExprSpan }
 list_atom
@@ -896,7 +897,6 @@ zero_or_more_comma_test_rev
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 
 classdef :: { StatementSpan }
--- classdef: 'class' NAME optional_arg_list ':' suite 
 classdef: 'class' NAME opt_paren_arg_list ':' suite 
            { AST.Class $2 $3 $5 (spanning $1 $5) }
 
@@ -939,22 +939,20 @@ argument
 
 comp_iter :: { CompIterSpan }
 comp_iter
-   : comp_for { IterFor $1 (getSpan $1) }
-   | comp_if  { IterIf $1 (getSpan $1) } 
+   : comp_for { AST.IterFor $1 (getSpan $1) }
+   | comp_if  { AST.IterIf $1 (getSpan $1) }
 
 -- comp_for: 'for' exprlist 'in' or_test [comp_iter]
 
 comp_for :: { CompForSpan }
-comp_for 
-   : 'for' exprlist 'in' or_test opt(comp_iter) 
-     { CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
+comp_for
+   : 'for' exprlist 'in' or_test opt(comp_iter)
+     { AST.CompFor $2 $4 $5 (spanning (spanning $1 $4) $5) }
 
 -- comp_if: 'if' test_nocond [comp_iter]
 
 comp_if :: { CompIfSpan }
-comp_if 
-   : 'if' test_no_cond opt(comp_iter) 
-     { CompIf $2 $3 (spanning (spanning $1 $2) $3) }
+comp_if: 'if' test_no_cond opt(comp_iter) { AST.CompIf $2 $3 (spanning (spanning $1 $2) $3) }
 
 -- encoding_decl: NAME
 -- Not used in the rest of the grammar!
