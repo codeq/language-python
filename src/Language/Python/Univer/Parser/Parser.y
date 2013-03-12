@@ -212,15 +212,12 @@ eval_input : testlist many0('NEWLINE') {- No need to mention ENDMARKER -} { $1 }
 
 --  decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
 
-opt_paren_arg_list :: { [ArgumentSpan] }
-opt_paren_arg_list: optlist(paren_arg_list) { $1 }
-
 paren_arg_list :: { [ArgumentSpan] }
-paren_arg_list : '(' optional_arg_list ')' { $2 }
+paren_arg_list : '(' optlist(arglist) ')' { $2 }
 
 decorator :: { DecoratorSpan }
 decorator 
-   : '@' dotted_name opt_paren_arg_list 'NEWLINE' 
+   : '@' dotted_name optlist(paren_arg_list) 'NEWLINE' 
      { makeDecorator $1 $2 $3 }
 
 -- decorators: decorator+
@@ -667,15 +664,12 @@ test_no_cond: or(or_test, lambdef_nocond) { $1 }
 -- lambdef: 'lambda' [varargslist] ':' test
 
 lambdef :: { ExprSpan }
-lambdef : 'lambda' opt_varargslist ':' test { AST.Lambda $2 $4 (spanning $1 $4) }
+lambdef : 'lambda' optlist(varargslist) ':' test { AST.Lambda $2 $4 (spanning $1 $4) }
 
 -- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
 
 lambdef_nocond :: { ExprSpan }
-lambdef_nocond : 'lambda' opt_varargslist ':' test_no_cond { AST.Lambda $2 $4 (spanning $1 $4) }
-
-opt_varargslist :: { [ParameterSpan] }
-opt_varargslist: optlist(varargslist) { $1 }
+lambdef_nocond : 'lambda' optlist(varargslist) ':' test_no_cond { AST.Lambda $2 $4 (spanning $1 $4) }
 
 -- or_test: and_test ('or' and_test)* 
 
@@ -940,11 +934,8 @@ zero_or_more_comma_test_rev
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 
 classdef :: { StatementSpan }
-classdef: 'class' NAME opt_paren_arg_list ':' suite 
+classdef: 'class' NAME optlist(paren_arg_list) ':' suite 
            { AST.Class $2 $3 $5 (spanning $1 $5) }
-
-optional_arg_list :: { [ArgumentSpan] }
-optional_arg_list: optlist(arglist) { $1 } 
 
 {- 
    arglist: (argument ',')* (argument [',']
