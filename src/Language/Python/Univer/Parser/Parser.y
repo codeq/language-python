@@ -212,12 +212,12 @@ eval_input : testlist many0('NEWLINE') {- No need to mention ENDMARKER -} { $1 }
 
 --  decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
 
-paren_arg_list :: { [ArgumentSpan] }
-paren_arg_list : '(' optlist(arglist) ')' { $2 }
+paren_arglist :: { [ArgumentSpan] }
+paren_arglist : '(' optlist(arglist) ')' { $2 }
 
 decorator :: { DecoratorSpan }
 decorator 
-   : '@' dotted_name optlist(paren_arg_list) 'NEWLINE' 
+   : '@' dotted_name optlist(paren_arglist) 'NEWLINE' 
      { makeDecorator $1 $2 $3 }
 
 -- decorators: decorator+
@@ -849,7 +849,7 @@ testlist_comp
 
 trailer :: { Trailer }
 trailer 
-   : paren_arg_list { TrailerCall $1 (getSpan $1) }
+   : paren_arglist { TrailerCall $1 (getSpan $1) }
    | '[' subscriptlist ']' { TrailerSubscript $2 (spanning $1 $3) } 
    | '.' NAME { TrailerDot $2 (getSpan $1) (spanning $1 $2) }
 
@@ -934,7 +934,7 @@ zero_or_more_comma_test_rev
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 
 classdef :: { StatementSpan }
-classdef: 'class' NAME optlist(paren_arg_list) ':' suite 
+classdef: 'class' NAME optlist(paren_arglist) ':' suite 
            { AST.Class $2 $3 $5 (spanning $1 $5) }
 
 {- 
