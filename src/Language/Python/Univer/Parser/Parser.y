@@ -258,18 +258,12 @@ one_typedargs_param
   | '**' tfpdef                      { makeStarStarParam $1 $2 }
 
 optional_default :: { Maybe ExprSpan }
-optional_default : opt(equals_test)  { $1 }
-
-equals_test :: { ExprSpan }
-equals_test : '=' test  { $2 }
+optional_default : opt(right('=', test))  { $1 }
 
 {- tfpdef: NAME [':' test] -}
 
 tfpdef :: { (IdentSpan, Maybe ExprSpan) }
-tfpdef : NAME opt(colon_test)  { ($1, $2) }
-
-colon_test :: { ExprSpan }
-colon_test : ':' test  { $2 }
+tfpdef : NAME opt(right(':', test))  { ($1, $2) }
 
 {-
   varargslist: ((vfpdef ['=' test] ',')* ('*' [vfpdef] (',' vfpdef ['=' test])*  [',' '**' vfpdef] | '**' vfpdef) | vfpdef ['=' test] (',' vfpdef ['=' test])* [','])
