@@ -147,6 +147,9 @@ opt(p)
    :    { Nothing }
    | p  { Just $1 }
 
+optlist(p)
+   : opt(p) { concat (maybeToList $1) }
+
 rev_list1(p)
    : p               { [$1] }
    | rev_list1(p) p  { $2 : $1 }
@@ -210,7 +213,7 @@ eval_input : testlist many0('NEWLINE') {- No need to mention ENDMARKER -} { $1 }
 --  decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
 
 opt_paren_arg_list :: { [ArgumentSpan] }
-opt_paren_arg_list: opt(paren_arg_list) { concat (maybeToList $1) }
+opt_paren_arg_list: optlist(paren_arg_list) { $1 }
 
 paren_arg_list :: { [ArgumentSpan] }
 paren_arg_list : '(' optional_arg_list ')' { $2 }
@@ -242,7 +245,7 @@ funcdef
 -- parameters: '(' [typedargslist] ')'
 
 parameters :: { [ParameterSpan] }
-parameters : '(' opt(typedargslist) ')' { concat (maybeToList $2) }
+parameters : '(' optlist(typedargslist) ')' { $2 }
 
 typedargslist :: { [ParameterSpan] }
 typedargslist: sepOptEndBy(one_typedargs_param,',') {% checkParameters $1 }
@@ -672,7 +675,7 @@ lambdef_nocond :: { ExprSpan }
 lambdef_nocond : 'lambda' opt_varargslist ':' test_no_cond { AST.Lambda $2 $4 (spanning $1 $4) }
 
 opt_varargslist :: { [ParameterSpan] }
-opt_varargslist: opt(varargslist) { concat (maybeToList $1) }
+opt_varargslist: optlist(varargslist) { $1 }
 
 -- or_test: and_test ('or' and_test)* 
 
@@ -941,7 +944,7 @@ classdef: 'class' NAME opt_paren_arg_list ':' suite
            { AST.Class $2 $3 $5 (spanning $1 $5) }
 
 optional_arg_list :: { [ArgumentSpan] }
-optional_arg_list: opt(arglist) { concat (maybeToList $1) } 
+optional_arg_list: optlist(arglist) { $1 } 
 
 {- 
    arglist: (argument ',')* (argument [',']
