@@ -45,12 +45,6 @@ library
     Language.Python.Univer
     Language.Python.Univer.Parser
     Language.Python.Univer.Lexer
-    Language.Python.Version3
-    Language.Python.Version3.Parser
-    Language.Python.Version3.Lexer
-    Language.Python.Version2
-    Language.Python.Version2.Parser
-    Language.Python.Version2.Lexer
     Language.Python.Common.PrettyParseError
     Language.Python.Common.StringEscape
   other-modules:
@@ -58,10 +52,6 @@ library
     Language.Python.Common.LexerUtils
     Language.Python.Univer.Parser.Parser
     Language.Python.Univer.Parser.Lexer
-    Language.Python.Version3.Parser.Parser
-    Language.Python.Version3.Parser.Lexer
-    Language.Python.Version2.Parser.Parser
-    Language.Python.Version2.Parser.Lexer
 
 test-suite univer
   type:           exitcode-stdio-1.0
